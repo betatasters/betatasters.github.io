@@ -9,7 +9,7 @@ var peer = new Peer();
 
 // Must wait for the peer to be established before establishing a connection with the main peer.
 peer.on('open', function(id) {
-  id = window.location.pathname.slice(1);
+  id = window.location.hash.substr(1);
   // var conn = peer.connect('xfh6gx3yxw000000');
   var conn = peer.connect(id);
 
