@@ -1,0 +1,46 @@
+<html lang="en">
+
+<head>
+
+<script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+
+<script>
+var peer = new Peer();
+
+// Must wait for the peer to be established before establishing a connection with the main peer.
+peer.on('open', function(id) {
+  id = window.location.pathname.slice(1);
+  // var conn = peer.connect('xfh6gx3yxw000000');
+  var conn = peer.connect(id);
+
+  conn.on('open', function() {
+    console.log('connection open');
+    // Receive messages
+    conn.on('data', function(data) {
+      console.log('Received: ', data);
+      document.body.insertAdjacentHTML('afterbegin', data);
+    });
+
+    // Send messages
+    conn.send('Hello!');
+  });
+
+});
+
+// on open will be launch when you successfully connect to PeerServer
+// conn.on('open', function(){
+//   console.log('test');
+//   console.log(conn.id);
+//   // here you have conn.id
+//   conn.send('hi!');
+// });
+
+
+
+</script>
+
+</head>
+
+<body>
+</body>
+</html>
