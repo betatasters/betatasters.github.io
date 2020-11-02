@@ -1,0 +1,32 @@
+<html lang="en">
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"></script>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', async () => {
+      id = window.location.hash.substr(1);
+    
+      const ipfs = await Ipfs.create();
+      window.ipfs = ipfs
+
+      let msg = new TextEncoder().encode('connected')
+      await ipfs.pubsub.publish(topic, msg)
+      
+      decoder = new TextDecoder();
+      const receiveMsg = (msg) => {
+        let data = decoder.decode(msg.data);
+        console.log("Received msg:" + data);
+        document.body.insertAdjacentHTML('afterbegin', data);
+      }
+      await ipfs.pubsub.subscribe(topic, receiveMsg);
+
+    })
+  </script>
+
+</head>
+
+<body>
+</body>
+</html>
