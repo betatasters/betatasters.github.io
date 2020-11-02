@@ -6,8 +6,9 @@
 
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', async () => {
-      id = window.location.hash.substr(1);
-    
+      let id = window.location.hash.substr(1);
+      let topic = id;
+        
       const ipfs = await Ipfs.create();
       window.ipfs = ipfs
 
