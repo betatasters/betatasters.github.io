@@ -1,0 +1,31 @@
+<html lang="en">
+
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"></script>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', async () => {
+      const node = await Ipfs.create({ repo: 'ipfs-' + Math.random() })
+      window.node = node
+
+      //const status = node.isOnline() ? 'online' : 'offline'
+
+
+      id = window.location.hash.substr(1);
+
+      async function catFile () {
+        for await (const data of node.cat(id)) {
+          console.log(data.toString())
+          document.body.insertAdjacentHTML('afterbegin', data.toString());
+        }
+      }
+      catFile();
+    })
+  </script>
+
+</head>
+
+<body>
+</body>
+</html>
