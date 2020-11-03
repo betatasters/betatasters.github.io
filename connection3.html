@@ -7,14 +7,12 @@
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', async () => {
       let id = window.location.hash.substr(1);
-      let topic = id;
-        
+      let topic = 'fruit-of-the-day';
+
       const ipfs = await Ipfs.create();
       window.ipfs = ipfs
 
-      let msg = new TextEncoder().encode('connected')
-      await ipfs.pubsub.publish(topic, msg)
-      
+
       decoder = new TextDecoder();
       const receiveMsg = (msg) => {
         let data = decoder.decode(msg.data);
@@ -22,6 +20,10 @@
         document.body.insertAdjacentHTML('afterbegin', data);
       }
       await ipfs.pubsub.subscribe(topic, receiveMsg);
+
+      let msg = new TextEncoder().encode('CONNECTED');
+      await ipfs.pubsub.publish(topic, msg)
+
 
     })
   </script>
