@@ -1,35 +1,125 @@
-<html lang="en">
-
+<<!doctype html>
+<html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"></script>
+  <title>IPFS in the Browser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
 
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', async () => {
-      let id = window.location.hash.substr(1);
-      let topic = 'fruit-of-the-day';
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js" integrity="sha512-NFUcDlm4V+a2sjPX7gREIXgCSFja9cHtKPOL1zj6QhnE0vcY695MODehqkaGYTLyL2wxe/wtr4Z49SvqXq12UQ==" crossorigin="anonymous"></script>
 
-      const ipfs = await Ipfs.create();
-      window.ipfs = ipfs
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-peer/9.8.0/simplepeer.min.js" integrity="sha512-E7n4M9VAeElTbAvxzEO92tYsjfg1e0INE+RQLEf3Dpra2EY2X2ygTaGi2NMpccKGY8Q7+npUX68igKUkAammKQ==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js" integrity="sha512-qoCTmFwBtCPvFhA+WAqatSOrghwpDhFHxwAGh+cppWonXbHA09nG1z5zi4/NGnp8dUhXiVrzA6EnKgJA+fyrpw==" crossorigin="anonymous"></script>
 
 
-      decoder = new TextDecoder();
-      const receiveMsg = (msg) => {
-        let data = decoder.decode(msg.data);
-        console.log("Received msg:" + data);
-        document.body.insertAdjacentHTML('afterbegin', data);
+  <script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.min.js"></script>
+  <script type="text/javascript">
+  const topic = "recipe-pubsub-test";
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
+  const isMain = location.hash.length === 0;
+  const mainsId = window.location.hash.substr(1);
+
+  // The initiator is the guest
+  const p = new SimplePeer({
+    initiator: !isMain,
+    trickle: false
+  })
+
+  let p2pid = null;
+  p.on('signal', data => {
+      str = JSON.stringify(data);
+      //str = data.sdp;
+      console.log('SIGNAL', JSON.stringify(data));
+      console.log('SIGNAL', str);
+      console.log('SIGNAL length:', str.length);
+      var compressed = LZString.compressToUTF16(str);
+      console.log('SIGNAL compressed length:', compressed.length);
+      p2pSignal = new TextEncoder().encode(compressed);
+
+      if (isMain) {
+        node.pubsub.publish(topic, p2pSignal);
       }
-      await ipfs.pubsub.subscribe(topic, receiveMsg);
+  })
 
-      let msg = new TextEncoder().encode('CONNECTED');
-      await ipfs.pubsub.publish(topic, msg)
+  p.on('connect', () => {
+    console.log('CONNECTED');
+    if (isMain) {
+      p.send('<div>YESSSS</div>');
+    }
+  })
+
+  p.on('data', data => {
+    document.body.insertAdjacentHTML('afterbegin', data);
+  })
+
+    document.addEventListener('DOMContentLoaded', async () => {
+
+
+
+      const node = window.node = await Ipfs.create({
+        repo: `ipfs-${Math.random()}`,
+        relay: {enabled: true, hop: {enabled: true, active: true}},
+
+      });
+
+      nodeId = (await node.id()).id;
+
+      console.log(`node id ${nodeId}`);
+
+      if (isMain) {
+        url = `https://betatasters.github.io/connection3/#${nodeId}`;
+        console.log(url);
+        jQuery('#qrcodeCanvas').qrcode({
+          text:	url
+        });
+      }
+
+
+      await node.pubsub.subscribe(topic, ({from, data, topicIDs, seqno}) => {
+        // A node is subscribed to it's own pubsub, so ignore messages from itself
+        if (from !== nodeId) {
+          let text = new TextDecoder().decode(data);
+          text = LZString.decompressFromUTF16(text);
+          console.log(`signal received: ${text}`);
+
+            p.signal(JSON.parse(text));
+        }
+      });
+
+      if (!isMain) {
+        // connect to main's Id via ipfs
+        for (const relay of await node.swarm.addrs()) {
+          if (relay.id === mainsId) continue;
+          try {
+            const relayId = `/p2p/${relay.id}/p2p-circuit/p2p/${mainsId}`;
+              await node.swarm.connect(relayId);
+
+          } catch (err) {
+            console.log(err);
+          }
+        }
+
+      await delay(1000);
+      if (p2pSignal){
+        console.log(`publish ${p2pSignal}`);
+        await node.pubsub.publish(topic, p2pSignal);
+      } else {
+        await delay(2000);
+        if (p2pSignal){
+          console.log(`publish 2 ${p2pSignal}`);
+          await node.pubsub.publish(topic, p2pSignal);
+        }
+      }
+
+      }
 
 
     })
   </script>
-
 </head>
-
 <body>
+
+  <div id="qrcodeCanvas"></div>
+
 </body>
 </html>
